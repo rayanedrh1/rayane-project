@@ -1,0 +1,108 @@
+"""
+CSC118Basketballwithclass.pyde -- create a simple simulation of a
+   bouncing basketball.  Will even add an image to it.
+   And sounds.  But now, want to explore classes!
+A. Thall
+CSC 118 F23
+9/20/23
+"""
+
+add_library("minim")
+
+# global state variables
+
+# world
+g = 0.25   # accelerate at half a pixel per frame per frame
+
+# Basketball
+class Basketball:
+    pass
+
+bbList = []
+for i in range(100):
+    bbList.append( Basketball() )
+    
+court_image = None
+
+# State variables for the sounds
+kick = None
+snare = None
+backingTrack = None
+
+# Initialization
+def setup():
+    global bb1, bb2
+    global court_image
+    global kick, snare, backingTrack
+    size(1000, 500)
+    stroke(0)
+        
+    # load sounds
+    minim = Minim(this)
+    kick = minim.loadSample("BD.mp3", 512)
+    snare = minim.loadSample("SD.wav", 512)
+    backingTrack = minim.loadFile("projectMixdown.mp3")
+    #backingTrack.loop()
+    
+    # initialize state of basketball bb1
+    for ball in bbList:
+        ball.x = width/2
+        ball.y = height/2
+        ball.vx = random(-5, 5)
+        ball.vy = random(-5, 5)
+        ball.size = int(random(25, 125))
+        ball.image = loadImage("basketball.png")
+        ball.image.resize(ball.size, ball.size)
+    
+    court_image = loadImage("court.png")
+    court_image.resize(width, height)
+    
+    # be sure to center images rather than draw from upper left
+    imageMode(CENTER)
+    
+# Drawing loop
+def draw():
+    background(court_image)
+    
+    for bb in bbList:
+        # update basketball state
+        ## first, do a simple Euler solver, updating the velocity
+        ##   and then updating the position based on the new velocity
+        bb.vy += g
+        bb.x += bb.vx
+        bb.y += bb.vy
+    
+        ## second, check for collisions of the ball with left/right walls
+        ##   and with bottom and top of window, and make it bounce off
+        
+        ### bottom of window
+        if bb.y >= height - bb.size/2:
+            kick.trigger()
+            bb.y = height - bb.size/2 - 1
+            bb.vy = -bb.vy  
+            
+        ### top of window
+        if bb.y < bb.size/2:
+            bb.y = bb.size/2 + 1
+            bb.vy = -bb.vy
+            
+        ### left wall
+        if bb.x < bb.size/2:
+            snare.trigger()
+            bb.x = bb.size/2 + 1
+            bb.vx = -bb.vx
+            
+        ### right wall
+        if bb.x >= width - bb.size/2:
+            snare.trigger()
+            bb.x = width - bb.size/2 - 1
+            bb.vx = -bb.vx
+        
+        # Now draw ball at new position
+        image(bb.image, bb.x, bb.y)
+    
+def keyPressed():
+    if backingTrack.isPlaying():
+        backingTrack.pause()
+    else:
+        backingTrack.play()
